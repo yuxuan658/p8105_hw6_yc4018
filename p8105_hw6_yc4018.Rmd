@@ -50,7 +50,7 @@ sum(is.na(birthweight_df))
 
 2. Propose a regression model for birthweight
 
-  - After searching online, I found out that the premature birth, mother's race, age, and health, multiple birth, and whether or not she smokes are the majority causes of low birthweight. Hence, I choose gestational age in weeks (`gaweeks`), mother’s race (`mrace`), mother’s age at delivery (`momage`), mother’s pre-pregnancy BMI (`ppbmi`), number of live births prior to this pregnancy (`parity`), and average number of cigarettes smoked per day during pregnancy(`smoken`) as predictors to predict child's birthweight.
+  - After searching online, I found out that premature birth, mother's race, age, and health, multiple births, and whether or not she smokes are the majority causes of low birthweight. Hence, I choose gestational age in weeks (`gaweeks`), mother’s race (`mrace`), mother’s age at delivery (`momage`), mother’s pre-pregnancy BMI (`ppbmi`), number of live births prior to this pregnancy (`parity`), and average number of cigarettes smoked per day during pregnancy(`smoken`) as predictors to predict child's birthweight.
   
 ```{r}
 model_fit1 = lm(bwt ~ gaweeks + mrace + momage + ppbmi + parity + smoken, data = birthweight_df)
@@ -73,17 +73,24 @@ birthweight_df %>%
 
 ```
 
+ - Based on the above scatter plot we can see that the residuals "bounce randomly" around the 0. Hence, the assumption that the relationship between the predictors, (`gaweeks`), mother’s race (`mrace`), mother’s age at delivery (`momage`), mother’s pre-pregnancy BMI (`ppbmi`), number of live births prior to this pregnancy (`parity`), and average number of cigarettes smoked per day during pregnancy(`smoken`), and the outcome, child's birthweight, is linear is reasonable. 
+ 
 4. Fit two other models: 
 
  - One using length at birth and gestational age as predictors (main effects only)
 ```{r}
 model_fit2 = lm(bwt ~ blength + gaweeks, data = birthweight_df)
+
+broom::tidy(model_fit2) %>% 
+  knitr::kable()
 ```
 
  - One using head circumference, length, sex, and all interactions (including the three-way interaction) between these
 ```{r}
 model_fit3 = lm(bwt ~ bhead + blength + babysex + bhead * blength + 
                   bhead * babysex + blength * babysex + bhead * blength * babysex, data = birthweight_df)
+broom::tidy(model_fit3) %>% 
+  knitr::kable()
 ```
 
 5. Compute rmse: cross validation.
@@ -119,7 +126,8 @@ cv_df %>%
     values_to = "rmse",
     names_prefix = "rmse_") %>% 
   ggplot(aes(x = model, y = rmse)) +
-  geom_violin() +
+  geom_violin(aes(fill = model), alpha = .5) +
+  theme(legend.position = "none") +
   labs(
      title = "Violin Plot of RMSEs for Three Models",
      x = "Model",
@@ -127,7 +135,7 @@ cv_df %>%
   
 ```
 
- - Based on the above violin plot of RMSEs for three models, since the model 3 has the smallest RMSE value, it is the best model; and the model 1 which with the largest RMSE value is the worst model. Hence, model 3, the model that has highest prediction accuracy, is the one to use `head circumference`, `length`, `sex`, and all interactions as predictors to predict child’s birthweight. 
+ - Based on the above violin plot of RMSEs for three models, since model 3 has the smallest RMSE value, it is the best model; and model 1 which with the largest RMSE value is the worst model. Hence, model 3, the model that has the highest prediction accuracy, is the one to use `head circumference`, `length`, `sex`, and all interactions as predictors to predict child’s birthweight. 
 
 ### **Problem 2**
 
@@ -156,7 +164,7 @@ weather_boot_results =
     ) %>% 
     select(strap_number, results_r, results_log) %>% 
     unnest(results_r, results_log) %>% 
-  select(strap_number, adj.r.squared, term, estimate) %>% 
+  select(strap_number, r.squared, term, estimate) %>% 
   pivot_wider(
     names_from = term,
     values_from = estimate
@@ -165,7 +173,7 @@ weather_boot_results =
   mutate(
     log_beta1beta2 = log(intercept * tmin)
   ) %>% 
-  select(strap_number, adj_r_squared, log_beta1beta2)
+  select(strap_number, r_squared, log_beta1beta2)
 
 ```
 
@@ -173,11 +181,11 @@ weather_boot_results =
 
 ```{r}
 weather_boot_results %>% 
-  ggplot(aes(x = adj_r_squared)) +
+  ggplot(aes(x = r_squared)) +
   geom_density() + 
   labs(
-    title = c("Distribution of Adjusted R Squared"),
-    x = c("Adjusted R Squared"),
+    title = c("Distribution of R Squared"),
+    x = c("R Squared"),
     y = c("Density")
   )
 
@@ -205,14 +213,14 @@ weather_boot_results %>%
 ```{r}
 weather_boot_results %>% 
   summarize(
-    ci_lower_r = quantile(adj_r_squared, 0.025),
-    ci_upper_r = quantile(adj_r_squared, 0.975),
+    ci_lower_r = quantile(r_squared, 0.025),
+    ci_upper_r = quantile(r_squared, 0.975),
     ci_lower_log = quantile(log_beta1beta2, 0.025),
     ci_upper_log = quantile(log_beta1beta2, 0.975),
   )
 ```
 
- - Hence, the 95% confidence interval for $\hat{r}^2$ is (0.893, 0.927). We are 95% confident that the $\hat{r}^2$ is between 0.893 and 0.927.     
+ - Hence, the 95% confidence interval for $\hat{r}^2$ is (0.894, 0.927). We are 95% confident that the $\hat{r}^2$ is between 0.894 and 0.927.     
    And the 95% confidence interval for $log(\widehat{\beta}_0 * \widehat{\beta}_1)$ is (1.966, 2.059). We are 95% confident that the $log(\widehat{\beta}_0 * \widehat{\beta}_1)$ is between 1.966 and 2.059.     
  
  
