@@ -1,0 +1,49 @@
+---
+title: "p8105_hw6_yc4018"
+author: "Yuxuan Chen"
+date: "12/3/2021"
+output: github_document
+---
+```{r message = FALSE}
+library(tidyverse)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis", 
+  ggplot2.continuous.fill = "viridis" 
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+**Problem 1**
+
+understand the effects of several variables on a child’s birthweight.
+
+1. Load and clean the data for regression analysis 
+
+```{r warning = FALSE}
+birthweight = 
+  read.csv("./data/birthweight.csv") %>% 
+  mutate(
+    babysex = as.factor(babysex),
+    frace = as.factor(frace),
+    malform = as.factor(malform),
+    mrace = as.factor(mrace))
+knitr::kable(birthweight[0:10,])
+
+# check for missing data
+map(birthweight, ~sum(is.na(.))) %>% as_tibble()
+```
+
+ - Through data cleaning, I changed the `babysex`, `frace`, `malform`, and `mrace` these categorical variables from numeric to factor. Also, after checking for missing data, there are no missing values in this dataset.
+
+
