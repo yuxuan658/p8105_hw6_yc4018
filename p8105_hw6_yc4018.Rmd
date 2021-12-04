@@ -30,8 +30,6 @@ set.seed(1)
 
 ### **Problem 1**
 
-understand the effects of several variables on a child’s birthweight.
-
 1. Load and clean the data for regression analysis 
 
 ```{r warning = FALSE}
@@ -52,7 +50,7 @@ sum(is.na(birthweight_df))
 
 2. Propose a regression model for birthweight
 
-  - After searching online, I found out that the premature birth, mother's race, age, and health, multiple birth, and whether or not she smokes are the majority causes of low birthweight. Hence, I choose to study whether birthweight as an outcome depends on gestational age in weeks (`gaweeks`), mother’s race (`mrace`), mother’s age at delivery (`momage`), mother’s pre-pregnancy BMI (`ppbmi`), number of live births prior to this pregnancy (`parity`), and average number of cigarettes smoked per day during pregnancy(`smoken`).
+  - After searching online, I found out that the premature birth, mother's race, age, and health, multiple birth, and whether or not she smokes are the majority causes of low birthweight. Hence, I choose gestational age in weeks (`gaweeks`), mother’s race (`mrace`), mother’s age at delivery (`momage`), mother’s pre-pregnancy BMI (`ppbmi`), number of live births prior to this pregnancy (`parity`), and average number of cigarettes smoked per day during pregnancy(`smoken`) as predictors to predict child's birthweight.
   
 ```{r}
 model_fit1 = lm(bwt ~ gaweeks + mrace + momage + ppbmi + parity + smoken, data = birthweight_df)
@@ -129,4 +127,93 @@ cv_df %>%
   
 ```
 
- - Based on the above violin plot of RMSEs for three models, since the model 3 has the smallest RMSE value, it is the best model; and the model 1 which with the largest RMSE value is the worst model. Hence, the model that has highest prediction accuracy is the one to use `head circumference`, `length`, `sex`, and all interactions as predictors to predict child’s birthweight. 
+ - Based on the above violin plot of RMSEs for three models, since the model 3 has the smallest RMSE value, it is the best model; and the model 1 which with the largest RMSE value is the worst model. Hence, model 3, the model that has highest prediction accuracy, is the one to use `head circumference`, `length`, `sex`, and all interactions as predictors to predict child’s birthweight. 
+
+### **Problem 2**
+
+```{r message = FALSE}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+```{r warning = FALSE}
+weather_boot_results = 
+  weather_df %>%
+    bootstrap(5000, id = "strap_number") %>% 
+    mutate(
+      models = map(.x = strap, ~lm(tmax ~ tmin, data = .x)),
+      results_r = map(models, broom::glance),
+      results_log = map(models, broom::tidy)
+    ) %>% 
+    select(strap_number, results_r, results_log) %>% 
+    unnest(results_r, results_log) %>% 
+  select(strap_number, adj.r.squared, term, estimate) %>% 
+  pivot_wider(
+    names_from = term,
+    values_from = estimate
+  ) %>% 
+  janitor::clean_names() %>% 
+  mutate(
+    log_beta1beta2 = log(intercept * tmin)
+  ) %>% 
+  select(strap_number, adj_r_squared, log_beta1beta2)
+
+```
+
+1. Plot the distribution of $\hat{r}^2$
+
+```{r}
+weather_boot_results %>% 
+  ggplot(aes(x = adj_r_squared)) +
+  geom_density() + 
+  labs(
+    title = c("Distribution of Adjusted R Squared"),
+    x = c("Adjusted R Squared"),
+    y = c("Density")
+  )
+
+```
+
+ - Based on the above plot we can see that, the distribution of $\hat{r}^2$ is nearly normally distributed around the mean of roughly 0.912. 
+
+2. Plot the distribution of $log(\widehat{\beta}_0 * \widehat{\beta}_1)$: 
+
+```{r}
+weather_boot_results %>% 
+  ggplot(aes(x = log_beta1beta2)) +
+  geom_density() + 
+  labs(
+    title = c("Distribution of log(beta1*beta2)"),
+    x = c("log(beta1*beta2)"),
+    y = c("Density")
+  )
+```
+
+ - Based on the above plot we can see that, the distribution of $log(\widehat{\beta}_0 * \widehat{\beta}_1)$ is nearly normally distributed around the mean of roughly 2.02. 
+
+3. 95% confidence interval for $\hat{r}^2$ and $log(\widehat{\beta}_0 * \widehat{\beta}_1)$:
+
+```{r}
+weather_boot_results %>% 
+  summarize(
+    ci_lower_r = quantile(adj_r_squared, 0.025),
+    ci_upper_r = quantile(adj_r_squared, 0.975),
+    ci_lower_log = quantile(log_beta1beta2, 0.025),
+    ci_upper_log = quantile(log_beta1beta2, 0.975),
+  )
+```
+
+ - Hence, the 95% confidence interval for $\hat{r}^2$ is (0.893, 0.927). We are 95% confident that the $\hat{r}^2$ is between 0.893 and 0.927.     
+   And the 95% confidence interval for $log(\widehat{\beta}_0 * \widehat{\beta}_1)$ is (1.966, 2.059). We are 95% confident that the $log(\widehat{\beta}_0 * \widehat{\beta}_1)$ is between 1.966 and 2.059.     
+ 
+ 
+ 
