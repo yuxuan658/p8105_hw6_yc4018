@@ -31,19 +31,46 @@ understand the effects of several variables on a child’s birthweight.
 1. Load and clean the data for regression analysis 
 
 ```{r warning = FALSE}
-birthweight = 
+birthweight_df = 
   read.csv("./data/birthweight.csv") %>% 
   mutate(
     babysex = as.factor(babysex),
     frace = as.factor(frace),
     malform = as.factor(malform),
     mrace = as.factor(mrace))
-knitr::kable(birthweight[0:10,])
+knitr::kable(birthweight_df[0:10,])
 
 # check for missing data
-map(birthweight, ~sum(is.na(.))) %>% as_tibble()
+sum(is.na(birthweight_df))
 ```
 
  - Through data cleaning, I changed the `babysex`, `frace`, `malform`, and `mrace` these categorical variables from numeric to factor. Also, after checking for missing data, there are no missing values in this dataset.
+
+2. Propose a regression model for birthweight
+
+  - After searching online, I found out that the premature birth, mother's race, age, and health, multiple birth, and whether or not she smokes are the majority causes of low birthweight. Hence, I choose to study whether birthweight as an outcome depends on gestational age in weeks (`gaweeks`), mother’s race (`mrace`), mother’s age at delivery (`momage`), mother’s pre-pregnancy BMI (`ppbmi`), number of live births prior to this pregnancy (`parity`), and average number of cigarettes smoked per day during pregnancy(`smoken`).
+  
+```{r}
+model_fit1 = lm(bwt ~ gaweeks + mrace + momage + ppbmi + parity + smoken, data = birthweight_df)
+broom::tidy(model_fit1)
+```
+
+3. plot of model residuals against fitted values
+
+```{r}
+birthweight_df %>% 
+  modelr::add_predictions(model_fit1) %>% 
+  modelr::add_residuals(model_fit1) %>% 
+  ggplot(aes(x = pred, y = resid)) +
+  geom_point(alpha = .3) +
+  labs(
+    title = "Plot of Model1: Residuals Against Fitted Values",
+    x = "Fitted values",
+    y = "Residuals"
+    )
+
+```
+
+
 
 
